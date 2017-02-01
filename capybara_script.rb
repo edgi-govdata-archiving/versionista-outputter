@@ -7,6 +7,7 @@ require 'capybara/poltergeist'
 require 'date'
 require 'pry'
 require 'chronic'
+require 'securerandom'
 
 class Browser
   def self.new_session
@@ -24,9 +25,9 @@ end
 class VersionistaBrowser
   attr_reader :session, :row_index, :cutoff_time
 
-  def initialize(cutoff_hours)
+  def initialize(cutoff_hours, row_index)
     @session = Browser.new_session
-    @row_index = 0
+    @row_index = row_index.to_i || 0
     @cutoff_time = DateTime.now - (cutoff_hours.to_i / 24.0)
   end
 
@@ -46,7 +47,6 @@ class VersionistaBrowser
 
     website_rows.map do |name, href, change_time|
       next if change_time < cutoff_time
-      @row_index = 0
       [name, scrape_archived_page_data(href)]
     end.compact
   end
@@ -54,6 +54,7 @@ class VersionistaBrowser
   def headers
     [
       'Index',
+      "UUID",
       "Output Date/Time",
       'Agency',
       "Site Name",
@@ -189,6 +190,7 @@ class VersionistaBrowser
     
     headers.zip([
       row_index,                   #'Index'
+      SecureRandom.uuid,           # UUID
       Time.now.to_s,               #"Output Date/Time"
       tokenized_agency(site_name), #'Agency'
       site_name,                   #"Site Name"
@@ -207,7 +209,7 @@ class VersionistaBrowser
   end
 end
 
-browser = VersionistaBrowser.new(ENV.fetch("N"))
+browser = VersionistaBrowser.new(ENV.fetch("N"), ENV["INDEX"])
 
 browser.log_in(email: ENV.fetch("EMAIL"), password: ENV.fetch("PASSWORD"))
 websites_data = browser.scrape_each_page_version
