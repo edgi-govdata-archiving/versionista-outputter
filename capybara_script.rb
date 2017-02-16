@@ -24,11 +24,10 @@ class Browser
 end
 
 class VersionistaBrowser
-  attr_reader :session, :row_index, :cutoff_time
+  attr_reader :session, :cutoff_time
 
-  def initialize(cutoff_hours, row_index)
+  def initialize(cutoff_hours)
     @session = Browser.new_session
-    @row_index = row_index.to_i || 0
     @cutoff_time = DateTime.now - (cutoff_hours.to_i / 24.0)
   end
 
@@ -145,7 +144,6 @@ class VersionistaBrowser
       comparison_data = parse_comparison_data(comparison_links)
       latest_diff = comparison_diff(comparison_data[:latest_comparison_url])
 
-      increment_row_index!
       [
         href,
         data_row(
@@ -185,10 +183,6 @@ class VersionistaBrowser
     latest_link[:href].sub(/\/?$/, ":#{oldest_version_id}/")
   end
 
-  def increment_row_index!
-    @row_index += 1
-  end
-
   def comparison_diff(url)
     puts "Visiting the comparison url: #{url}"
     session.visit(url)
@@ -211,7 +205,7 @@ class VersionistaBrowser
                latest_comparison_date:, oldest_comparison_date:, latest_diff:)
     
     headers.zip([
-      row_index,                   #'Index'
+      nil,                         #'Index' - to be filled in later
       SecureRandom.uuid,           # UUID
       Time.now.to_s,               #"Output Date/Time"
       tokenized_agency(site_name), #'Agency'
@@ -233,7 +227,8 @@ class VersionistaBrowser
   end
 end
 
-browser = VersionistaBrowser.new(ENV.fetch("N"), ENV["INDEX"])
+browser = VersionistaBrowser.new(ENV.fetch("N"))
+row_index = ENV["INDEX"] || 0
 
 browser.log_in(email: ENV.fetch("EMAIL"), password: ENV.fetch("PASSWORD"))
 websites_data = browser.scrape_each_page_version
@@ -252,6 +247,8 @@ websites_data.each do |website_name, data|
   data.sort_by do |url, scraped_data_hash|
     [scraped_data_hash["Diff Length"], scraped_data_hash["Diff Hash"]]
   end.each do |url, scraped_data_hash|
+    row_index += 1
+    scraped_data_hash["Index"] = row_index
     csv_writer.add_rows(url: url, rows: [scraped_data_hash])
   end
 
