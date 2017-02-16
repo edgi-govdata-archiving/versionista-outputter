@@ -8,6 +8,7 @@ require 'date'
 require 'pry'
 require 'chronic'
 require 'securerandom'
+require 'zlib'
 
 class Browser
   def self.new_session
@@ -66,6 +67,7 @@ class VersionistaBrowser
       "Date Found - Latest",
       "Date Found - Base",
       "Diff Length",
+      "Diff Hash",
     ]
   end
 
@@ -222,6 +224,7 @@ class VersionistaBrowser
       latest_comparison_date,      #"Date Found - Latest"
       oldest_comparison_date,      #"Date Found - Base"
       latest_diff.length,          # Diff length
+      Zlib.crc32(latest_diff),     # Diff hash
     ]).to_h
   end
 
