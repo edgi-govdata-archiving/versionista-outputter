@@ -228,7 +228,7 @@ class VersionistaBrowser
 end
 
 browser = VersionistaBrowser.new(ENV.fetch("N"))
-row_index = ENV["INDEX"] || 0
+row_index = ENV["INDEX"].to_i || 0
 
 browser.log_in(email: ENV.fetch("EMAIL"), password: ENV.fetch("PASSWORD"))
 websites_data = browser.scrape_each_page_version
