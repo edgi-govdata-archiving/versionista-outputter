@@ -249,7 +249,9 @@ end
 
 websites_data.each do |website_name, data|
   csv_writer = CSVWriter.new(filename_title: filename(website_name), headers: browser.headers)
-  data.each do |url, scraped_data_hash|
+  data.sort_by do |url, scraped_data_hash|
+    [scraped_data_hash["Diff Length"], scraped_data_hash["Diff Hash"]]
+  end.each do |url, scraped_data_hash|
     csv_writer.add_rows(url: url, rows: [scraped_data_hash])
   end
 
