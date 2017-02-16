@@ -65,6 +65,7 @@ class VersionistaBrowser
       "Latest to Base - Side by Side",
       "Date Found - Latest",
       "Date Found - Base",
+      "Diff Length",
     ]
   end
 
@@ -140,6 +141,7 @@ class VersionistaBrowser
       page_url = session.all(:xpath, "//div[@class='panel-heading']//h3/following-sibling::a[1]").first.text
       comparison_links = session.all(:xpath, "//*[@id='pageTableBody']/tr/td[1]/a")
       comparison_data = parse_comparison_data(comparison_links)
+      latest_diff = comparison_diff(comparison_data[:latest_comparison_url])
 
       increment_row_index!
       [
@@ -153,6 +155,7 @@ class VersionistaBrowser
           oldest_comparison_date: comparison_data[:oldest_comparison_date],
           latest_comparison_url: comparison_data[:latest_comparison_url],
           total_comparison_url: comparison_data[:total_comparison_url],
+          latest_diff: latest_diff,
         )
       ]
     end
@@ -184,9 +187,26 @@ class VersionistaBrowser
     @row_index += 1
   end
 
+  def comparison_diff(url)
+    puts "Visiting the comparison url: #{url}"
+    session.visit(url)
+    puts "-- Successful visit!"
+
+    session.within_frame(0) do
+      unless session.find("#viewer_chooser").value == "only"
+        session.select("source: changes only", from: "viewer_chooser")
+      end
+    end
+
+    session.within_frame(1) do
+      session.has_selector?("body s")
+      diff = session.find("body")[:innerHTML]
+    end
+  end
+
   def data_row(page_view_url:, site_name:, page_name:,
                page_url:, latest_comparison_url:, total_comparison_url:,
-               latest_comparison_date:, oldest_comparison_date:)
+               latest_comparison_date:, oldest_comparison_date:, latest_diff:)
     
     headers.zip([
       row_index,                   #'Index'
@@ -201,6 +221,7 @@ class VersionistaBrowser
       total_comparison_url,        #"Latest to Base - Side by Side"
       latest_comparison_date,      #"Date Found - Latest"
       oldest_comparison_date,      #"Date Found - Base"
+      latest_diff.length,          # Diff length
     ]).to_h
   end
 
