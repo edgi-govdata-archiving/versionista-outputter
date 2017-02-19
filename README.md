@@ -9,3 +9,13 @@
 2. Execute the script by running:
   `EMAIL=<your versionista email> PASSWORD=<your password> N=<number of hours back> INDEX=<starting index of csv> ruby capybara_script.rb`
 3. If the script completes successfully, you will have new csvs written in the `output/` directory.
+
+# Extra
+1. Sometimes the current page the script is scraping does not contain the expected
+html it is seeking. In these cases, Capybara will wait a set amount of time
+to see whether the content appears before giving up and throwing an error (
+that we gracefully rescue for diff pages). The default time is 2 seconds.
+This number of seconds can me modified by passing the ENV variable "PAGE_WAIT_TIME"
+when executing the script. For example: `PAGE_WAIT_TIME='1.5'` or `PAGE_WAIT_TIME=10`
+Beware that with too little a wait time, pages of the script besides the comparison
+pages may start failing.

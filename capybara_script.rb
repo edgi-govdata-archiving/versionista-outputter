@@ -19,6 +19,10 @@ class Browser
     # Configure Capybara to use Poltergeist as the driver
     Capybara.default_driver = :poltergeist
 
+    if wait_time = ENV["PAGE_WAIT_TIME"]
+      Capybara.default_max_wait_time = wait_time.to_f
+    end
+
     Capybara.current_session
   end
 end
