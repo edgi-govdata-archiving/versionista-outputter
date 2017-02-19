@@ -23,6 +23,26 @@ class Browser
   end
 end
 
+class PageDiff
+  attr_accessor :diff_text
+
+  def length
+    if diff_text.nil?
+      -1
+    else
+      diff_text.length
+    end
+  end
+
+  def hash
+    if diff_text.nil?
+      -1
+    else
+      Zlib.crc32(diff_text)
+    end
+  end
+end
+
 class VersionistaBrowser
   attr_reader :session, :cutoff_time
 
@@ -184,10 +204,25 @@ class VersionistaBrowser
   end
 
   def comparison_diff(url)
-    puts "Visiting the comparison url: #{url}"
-    session.visit(url)
-    puts "-- Successful visit!"
+    page_diff = PageDiff.new
 
+    begin
+      puts "Visiting the comparison url: #{url}"
+      session.visit(url)
+      puts "-- Successful visit!"
+      page_diff.diff_text = source_changes_only_diff
+    rescue Capybara::ExpectationNotMet,
+        Capybara::ElementNotFound,
+        Capybara::Poltergeist::StatusFailError
+
+      puts "__Error getting diff from: #{url}"
+      puts "-" * 80
+    end
+
+    page_diff
+  end
+
+  def source_changes_only_diff
     session.within_frame(0) do
       unless session.find("#viewer_chooser").value == "only"
         session.select("source: changes only", from: "viewer_chooser")
@@ -196,7 +231,7 @@ class VersionistaBrowser
 
     session.within_frame(1) do
       session.has_selector?("body s")
-      diff = session.find("body")[:innerHTML]
+      session.find("body")[:innerHTML]
     end
   end
 
@@ -218,7 +253,7 @@ class VersionistaBrowser
       latest_comparison_date,      #"Date Found - Latest"
       oldest_comparison_date,      #"Date Found - Base"
       latest_diff.length,          # Diff length
-      Zlib.crc32(latest_diff),     # Diff hash
+      latest_diff.hash,            # Diff hash
     ]).to_h
   end
 
