@@ -164,7 +164,7 @@ class VersionistaBrowser
 
       page_name = session.all(:xpath, "//div[@class='panel-heading']//h3").first.text
       page_url = session.all(:xpath, "//div[@class='panel-heading']//h3/following-sibling::a[1]").first.text
-      comparison_links = session.all(:xpath, "//*[@id='pageTableBody']/tr/td[1]/a")
+      comparison_links = session.all(:xpath, "//*[@id='pageTableBody']/tr/td[a][1]/a")
       comparison_data = parse_comparison_data(comparison_links)
       latest_diff = comparison_diff(comparison_data[:latest_comparison_url])
 
