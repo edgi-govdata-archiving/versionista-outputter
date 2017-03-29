@@ -19,3 +19,8 @@ This number of seconds can me modified by passing the ENV variable "PAGE_WAIT_TI
 when executing the script. For example: `PAGE_WAIT_TIME='1.5'` or `PAGE_WAIT_TIME=10`
 Beware that with too little a wait time, pages of the script besides the comparison
 pages may start failing.
+
+2. The script now scrapes both the source code diff and the text diff. This extra
+step makes the script slower than before. To skip the scraping of the text diff,
+add the optional ENV variable "SKIP_TEXT_DIFF", setting to any value (e.g. `SKIP_TEXT_DIFF=true`
+or `SKIP_TEXT_DIFF=1`).
