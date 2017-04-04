@@ -91,6 +91,8 @@ class VersionistaBrowser
       "Date Found - Base",
       "Diff Length",
       "Diff Hash",
+      "Text Diff Length",
+      "Text Diff Hash",
     ]
   end
 
@@ -166,7 +168,7 @@ class VersionistaBrowser
       page_url = session.all(:xpath, "//div[@class='panel-heading']//h3/following-sibling::a[1]").first.text
       comparison_links = session.all(:xpath, "//*[@id='pageTableBody']/tr/td[a][1]/a")
       comparison_data = parse_comparison_data(comparison_links)
-      latest_diff = comparison_diff(comparison_data[:latest_comparison_url])
+      latest_diff, latest_text_diff = comparison_diff(comparison_data[:latest_comparison_url])
 
       [
         href,
@@ -180,6 +182,7 @@ class VersionistaBrowser
           latest_comparison_url: comparison_data[:latest_comparison_url],
           total_comparison_url: comparison_data[:total_comparison_url],
           latest_diff: latest_diff,
+          latest_text_diff: latest_text_diff,
         )
       ]
     end
@@ -208,28 +211,39 @@ class VersionistaBrowser
   end
 
   def comparison_diff(url)
-    page_diff = PageDiff.new
+    page_code_diff = PageDiff.new
+    page_text_diff = PageDiff.new
 
     begin
       puts "Visiting the comparison url: #{url}"
       session.visit(url)
       puts "-- Successful visit!"
-      page_diff.diff_text = source_changes_only_diff
+      page_code_diff.diff_text = source_changes_only_diff
+      page_text_diff.diff_text = text_changes_only_diff unless ENV["SKIP_TEXT_DIFF"]
     rescue Capybara::ExpectationNotMet,
         Capybara::ElementNotFound,
-        Capybara::Poltergeist::StatusFailError
+        Capybara::Poltergeist::StatusFailError,
+        Capybara::Poltergeist::BrowserError
 
       puts "__Error getting diff from: #{url}"
       puts "-" * 80
     end
 
-    page_diff
+    [page_code_diff, page_text_diff]
   end
 
   def source_changes_only_diff
+    versionista_diff("only", "source: changes only")
+  end
+
+  def text_changes_only_diff
+    versionista_diff("text_only", "text: changes only")
+  end
+
+  def versionista_diff(option_value, option_text)
     session.within_frame(0) do
-      unless session.find("#viewer_chooser").value == "only"
-        session.select("source: changes only", from: "viewer_chooser")
+      unless session.find("#viewer_chooser").value == option_value
+        session.select(option_text, from: "viewer_chooser")
       end
     end
 
@@ -241,7 +255,8 @@ class VersionistaBrowser
 
   def data_row(page_view_url:, site_name:, page_name:,
                page_url:, latest_comparison_url:, total_comparison_url:,
-               latest_comparison_date:, oldest_comparison_date:, latest_diff:)
+               latest_comparison_date:, oldest_comparison_date:, latest_diff:,
+               latest_text_diff:)
     
     headers.zip([
       nil,                         #'Index' - to be filled in later
@@ -256,8 +271,10 @@ class VersionistaBrowser
       total_comparison_url,        #"Latest to Base - Side by Side"
       latest_comparison_date,      #"Date Found - Latest"
       oldest_comparison_date,      #"Date Found - Base"
-      latest_diff.length,          # Diff length
-      latest_diff.hash,            # Diff hash
+      latest_diff.length,          # Diff Length
+      latest_diff.hash,            # Diff Hash
+      latest_text_diff.length,     # Text Diff Length
+      latest_text_diff.hash,       # Text Diff Hash
     ]).to_h
   end
 
