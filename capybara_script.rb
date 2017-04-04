@@ -222,7 +222,8 @@ class VersionistaBrowser
       page_text_diff.diff_text = text_changes_only_diff unless ENV["SKIP_TEXT_DIFF"]
     rescue Capybara::ExpectationNotMet,
         Capybara::ElementNotFound,
-        Capybara::Poltergeist::StatusFailError
+        Capybara::Poltergeist::StatusFailError,
+        Capybara::Poltergeist::BrowserError
 
       puts "__Error getting diff from: #{url}"
       puts "-" * 80
